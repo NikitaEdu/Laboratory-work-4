@@ -1,0 +1,34 @@
+name: Data Schema Code Convention
+
+on:
+  # автоматичний запуск при push у гілку main – перевіряється DataSchema.sql
+  push:
+    branches: [main]
+  # ручний запуск з вкладки Actions з вибором файлу схеми
+  workflow_dispatch:
+    inputs:
+      schema_file:
+        description: "Файл схеми даних для перевірки"
+        required: true
+        default: DataSchema.sql
+        type: choice
+        options:
+          - DataSchema.sql
+          - DataSchemaModified.sql
+
+jobs:
+  SQLLinter:
+    # використання Docker-image із вказаною версією ОС
+    runs-on: ubuntu-latest
+    env:
+      SCHEMA_FILE: ${{ inputs.schema_file || 'DataSchema.sql' }}
+    steps:
+      - name: Checkout Code in Repository
+        # клонування репозиторію в каталог $GITHUB_WORKSPACE
+        uses: actions/checkout@v4
+
+      - name: Start SQL Linter
+        # встановлення sqlfluff та перевірка схеми для діалекту PostgreSQL
+        run: |
+          pip install sqlfluff
+          sqlfluff lint "$GITHUB_WORKSPACE/$SCHEMA_FILE" --dialect postgres -v
