@@ -1,0 +1,42 @@
+name: Program Code Convention
+
+on:
+  # автоматичний запуск при push у гілку main – перевіряється ProgramCode.java
+  push:
+    branches: [main]
+  # ручний запуск з вкладки Actions з вибором файлу програмного модуля
+  workflow_dispatch:
+    inputs:
+      code_file:
+        description: "Файл програмного модуля для перевірки"
+        required: true
+        default: ProgramCode.java
+        type: choice
+        options:
+          - ProgramCode.java
+          - ProgramCodeModified.java
+
+permissions:
+  contents: read
+  statuses: write
+
+jobs:
+  ProgramCodeLinter:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code in Repository
+        uses: actions/checkout@v4
+        with:
+          # super-linter потребує повної історії Git
+          fetch-depth: 0
+
+      - name: Lint Program Code
+        uses: super-linter/super-linter@v7
+        env:
+          # перевірка лише Java-файлів утилітою checkstyle (sun_checks)
+          VALIDATE_JAVA: true
+          # перевірка всіх файлів, а не лише змінених у коміті
+          VALIDATE_ALL_CODEBASE: true
+          DEFAULT_BRANCH: main
+          FILTER_REGEX_INCLUDE: .*${{ inputs.code_file || 'ProgramCode.java' }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
